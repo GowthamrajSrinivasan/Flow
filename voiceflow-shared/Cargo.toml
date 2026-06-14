@@ -1,0 +1,11 @@
+[package]
+name = "voiceflow-shared"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+sysinfo = "0.39.3"
+serde_json = "1.0.150"
+directories = "6.0.0"

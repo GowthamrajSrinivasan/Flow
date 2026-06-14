@@ -1,0 +1,11 @@
+[package]
+name = "voiceflow-cli"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+voiceflow-shared = { path = "../voiceflow-shared" }
+voiceflow-core = { path = "../voiceflow-core" }
+clap = { version = "4.6.1", features = ["derive"] }
+sysinfo = "0.39.3"
+hound = "3.5.1"

@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "voiceflow-shared",
+    "voiceflow-core",
+    "voiceflow-desktop",
+    "voiceflow-mobile",
+    "voiceflow-cli",
+    "voiceflow-app/src-tauri"
+]
+resolver = "2"

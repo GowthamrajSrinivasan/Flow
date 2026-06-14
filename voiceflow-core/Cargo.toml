@@ -1,0 +1,16 @@
+[package]
+name = "voiceflow-core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+voiceflow-shared = { path = "../voiceflow-shared" }
+cpal = "0.15"
+ringbuf = "0.3"
+ort = "2.0.0-rc.2" # For ONNX Runtime VAD
+whisper-rs = "0.16.0"
+parakeet-rs = "0.3.6"
+regex = "1.12.4"
+serde = { version = "1.0.228", features = ["derive"] }
+global-hotkey = "0.8.0"
+enigo = "0.6.1"

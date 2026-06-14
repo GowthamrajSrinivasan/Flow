@@ -18,7 +18,7 @@ impl FormattingEngine {
     }
 
     pub fn apply(&self, text: &str) -> String {
-        let mut result = text.to_string();
+        let mut result = text.replace("[BLANK_AUDIO]", "").replace("[_BLANK_AUDIO_]", "");
 
         // 1. Remove fillers
         result = self.filler_re.replace_all(&result, "").to_string();

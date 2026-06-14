@@ -11,7 +11,8 @@ pub enum VoiceFlowEvent {
     TranscriptionFinal(String),
     PartialTranscript(String),
     FinalTranscript(String),
-    InjectionComplete,
+    InjectionStarted,
+    InjectionCompleted,
+    ErrorOccurred(String),
     MetricsUpdated(SessionMetrics),
-    Error(String),
 }

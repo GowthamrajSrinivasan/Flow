@@ -46,7 +46,7 @@ impl SpeechRecognizer for ParakeetRecognizer {
         }
     }
 
-    fn partial_result(&self) -> Option<String> {
+    fn partial_result(&mut self) -> Option<String> {
         if self.partial_text.is_empty() {
             None
         } else {

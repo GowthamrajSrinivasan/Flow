@@ -87,6 +87,10 @@ impl SpeechRecognizer for WhisperCppRecognizer {
     }
 
     fn final_result(&mut self) -> String {
+        eprintln!("[DEBUG] final_result: audio_buffer has {} samples = {:.2}s",
+            self.audio_buffer.len(),
+            self.audio_buffer.len() as f32 / 16000.0
+        );
         if self.audio_buffer.is_empty() {
             return String::new();
         }

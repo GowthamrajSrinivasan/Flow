@@ -34,7 +34,7 @@ pub fn run() {
             app.manage(stop_tx);
 
             // Initialize Engines
-            let model_path = "/Users/gowthamrajsrinivasan/Documents/Projects/Flow/models/ggml-base.en.bin";
+            let model_path = "/Users/gowthamrajsrinivasan/Documents/Projects/Flow/models/ggml-small.en.bin";
             let whisper_recognizer = Arc::new(Mutex::new(
                 WhisperCppRecognizer::new(model_path).expect("Failed to load Whisper model")
             ));
@@ -102,10 +102,12 @@ pub fn run() {
                                 let mut recognizer = whisper_recognizer.lock().unwrap();
                                 recognizer.process_audio(&audio_data);
                                 let mut text = recognizer.final_result();
+                                eprintln!("[DEBUG] raw whisper output: {:?}", text);
                                 
                                 if !text.is_empty() {
                                     text = vocab_engine.apply(&text);
                                     text = format_engine.apply(&text);
+                                    eprintln!("[DEBUG] formatted text: {:?}", text);
                                     
                                     let _ = app_handle.emit("FinalTranscript", text.clone());
                                     

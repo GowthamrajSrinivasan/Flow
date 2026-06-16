@@ -3,26 +3,51 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
+    pub version: u32,
+    
+    // General
+    pub launch_at_login: bool,
+    pub overlay_enabled: bool,
+    pub theme: String,
+    
+    // Dictation
     pub hotkey: String,
     pub language: String,
-    pub overlay: bool,
-    pub auto_inject: bool,
+    pub vocabulary_count: u32,
+    
+    // Injection
+    pub auto_paste: bool,
+    pub clipboard_fallback: bool,
+    pub show_notifications: bool,
 }
 
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
-            hotkey: "Ctrl+Shift+Space".to_string(),
+            version: 1,
+            launch_at_login: false,
+            overlay_enabled: true,
+            theme: "dark".to_string(),
+            hotkey: "Alt+Space".to_string(),
             language: "en".to_string(),
-            overlay: true,
-            auto_inject: true,
+            vocabulary_count: 0,
+            auto_paste: true,
+            clipboard_fallback: true,
+            show_notifications: true,
         }
     }
 }
 
 impl AppSettings {
     pub fn config_dir() -> Option<PathBuf> {
-        directories::ProjectDirs::from("com", "voiceflow", "voiceflow").map(|dirs| dirs.config_dir().to_path_buf())
+        #[cfg(target_os = "macos")]
+        {
+            std::env::var("HOME").ok().map(|h| PathBuf::from(h).join("Library/Application Support/VoiceFlow"))
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            directories::ProjectDirs::from("com", "voiceflow", "voiceflow").map(|dirs| dirs.config_dir().to_path_buf())
+        }
     }
 
     pub fn config_file() -> Option<PathBuf> {
@@ -52,3 +77,4 @@ impl AppSettings {
         Ok(())
     }
 }
+

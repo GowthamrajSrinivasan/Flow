@@ -1,8 +1,0 @@
-[package]
-name = "voiceflow-desktop"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-voiceflow-shared = { path = "../voiceflow-shared" }
-voiceflow-core = { path = "../voiceflow-core" }

@@ -1,0 +1,9 @@
+[package]
+name = "voiceflow-stt"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+whisper-rs = "0.16.0"
+parakeet-rs = "0.3.6"
+serde = { version = "1.0.228", features = ["derive"] }

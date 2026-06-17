@@ -2,6 +2,6 @@
 members = [
     "crates/voiceflow-shared",
     "crates/voiceflow-core",
-    "crates/voiceflow-cli",
+    "crates/voiceflow-cli", "crates/voiceflow-stt", "crates/voiceflow-audio", "crates/voiceflow-vad",
 ]
 resolver = "2"

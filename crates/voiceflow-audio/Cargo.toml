@@ -1,0 +1,8 @@
+[package]
+name = "voiceflow-audio"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cpal = "0.15"
+ringbuf = "0.3"

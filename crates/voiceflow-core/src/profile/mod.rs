@@ -26,6 +26,12 @@ impl Default for DesktopProfile {
     }
 }
 
+impl DesktopProfile {
+    pub fn build() -> Self {
+        Self::default()
+    }
+}
+
 impl RuntimeProfile for DesktopProfile {
     fn stt_model(&self) -> &str {
         &self.stt_model

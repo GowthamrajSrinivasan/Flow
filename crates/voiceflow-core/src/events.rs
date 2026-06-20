@@ -7,4 +7,9 @@ pub enum VoiceFlowEvent {
     ModelDownloading(u8),
     ModelDownloadComplete,
     Error(String),
+    EngineInitializing,
+    ModelDownloadStarted,
+    ModelLoading,
+    EngineReady,
+    EngineNotReady,
 }

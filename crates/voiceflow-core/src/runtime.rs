@@ -255,7 +255,7 @@ pub fn run_listening_loop<A: AudioProvider, V: VadProcessor, S: SpeechRecognizer
             if start.elapsed() > silence_threshold {
                 let final_text = whisper.final_result();
                 if !final_text.is_empty() {
-                    let corrected_text = crate::editing::corrections::resolve_inline_corrections(&final_text);
+                    let corrected_text = crate::editing::corrections::resolve_all_tier1(&final_text);
                     let _ = tx.send(VoiceFlowEvent::FinalTranscript(corrected_text));
                 }
                 // Stop listening automatically because utterance is complete

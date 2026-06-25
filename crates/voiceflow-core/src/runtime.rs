@@ -94,6 +94,7 @@ pub enum RuntimeProfile {
 pub struct VoiceFlow {
     event_sender: Option<Sender<VoiceFlowEvent>>,
     is_listening: Arc<Mutex<bool>>,
+    formatter_context: Arc<Mutex<crate::pipeline::context::FormatterContext>>,
 }
 
 impl VoiceFlow {
@@ -101,7 +102,12 @@ impl VoiceFlow {
         Self {
             event_sender: None,
             is_listening: Arc::new(Mutex::new(false)),
+            formatter_context: Arc::new(Mutex::new(crate::pipeline::context::FormatterContext::default())),
         }
+    }
+
+    pub fn set_formatter_context(&self, context: crate::pipeline::context::FormatterContext) {
+        *self.formatter_context.lock().unwrap() = context;
     }
 
     pub fn subscribe(&mut self) -> Receiver<VoiceFlowEvent> {
@@ -118,6 +124,7 @@ impl VoiceFlow {
         *listening = true;
 
         let is_listening_clone = self.is_listening.clone();
+        let formatter_context_clone = self.formatter_context.clone();
         
         let tx = match &self.event_sender {
             Some(sender) => sender.clone(),
@@ -180,6 +187,7 @@ impl VoiceFlow {
                 &mut vad_engine,
                 &mut whisper,
                 is_listening_clone.clone(),
+                formatter_context_clone.clone(),
                 tx.clone(),
             );
 
@@ -207,6 +215,7 @@ pub fn run_listening_loop<A: AudioProvider, V: VadProcessor, S: SpeechRecognizer
     vad_engine: &mut V,
     whisper: &mut S,
     is_listening_clone: Arc<Mutex<bool>>,
+    formatter_context: Arc<Mutex<crate::pipeline::context::FormatterContext>>,
     tx: Sender<VoiceFlowEvent>,
 ) {
     let mut last_partial_time = Instant::now();
@@ -255,7 +264,12 @@ pub fn run_listening_loop<A: AudioProvider, V: VadProcessor, S: SpeechRecognizer
             if start.elapsed() > silence_threshold {
                 let final_text = whisper.final_result();
                 if !final_text.is_empty() {
-                    let corrected_text = crate::editing::corrections::resolve_all_tier1(&final_text);
+                    // STT -> Formatter -> Edit Resolution
+                    let formatted_text = {
+                        let context = formatter_context.lock().unwrap();
+                        crate::formatting::formatter::format(&final_text, &context)
+                    };
+                    let corrected_text = crate::editing::corrections::resolve_all_tier1(&formatted_text);
                     let _ = tx.send(VoiceFlowEvent::FinalTranscript(corrected_text));
                 }
                 // Stop listening automatically because utterance is complete

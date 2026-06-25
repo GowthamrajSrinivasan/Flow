@@ -1,8 +1,9 @@
+use crate::pipeline::context::FormatterContext;
 use crate::pipeline::request::FormattingMode;
 use super::{punctuation, spacing, cleanup, vocabulary, capitalization, email_url, lists};
 
-pub fn format(text: &str, mode: FormattingMode) -> String {
-    if mode == FormattingMode::Raw {
+pub fn format(text: &str, context: &FormatterContext) -> String {
+    if context.mode == FormattingMode::Raw {
         return text.to_string();
     }
     
@@ -22,14 +23,13 @@ pub fn format(text: &str, mode: FormattingMode) -> String {
     current = cleanup::cleanup(&current);
     
     // 5. User Vocabulary
-    // (In a real app, enabled state comes from processing options, passing true for now)
-    current = vocabulary::expand_vocabulary(&current, true);
+    current = vocabulary::expand_vocabulary(&current, context);
     
     // 6. Capitalization
     current = capitalization::capitalize(&current);
     
     // 7. Context Formatting
-    match mode {
+    match context.mode {
         FormattingMode::Email => {
             // Very simple deterministic fix as example
             if current.to_lowercase().starts_with("thanks,") && !current.contains('\n') {
@@ -55,7 +55,8 @@ mod tests {
         
         let expected = "Hello, here is my email john.doe@gmail.com. Here are the items we need:\n- apples\n- bananas\n- oranges.";
         
-        let formatted = format(input, FormattingMode::Smart);
+        let context = FormatterContext::default();
+        let formatted = format(input, &context);
         assert_eq!(formatted, expected);
     }
 
@@ -63,7 +64,8 @@ mod tests {
     fn test_tier4_url_and_punctuation() {
         let input = "go to open ai dot com slash pricing today comma and check the plans period";
         let expected = "Go to openai.com/pricing today, and check the plans.";
-        let formatted = format(input, FormattingMode::Smart);
+        let context = FormatterContext::default();
+        let formatted = format(input, &context);
         assert_eq!(formatted, expected);
     }
 }

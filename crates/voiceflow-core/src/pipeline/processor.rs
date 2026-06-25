@@ -23,8 +23,8 @@ impl VoiceFlowProcessor {
         let intent = IntentDetector::detect(transcript);
         
         // 2. Formatter Engine
-        // TODO: Call formatting pipeline
-        let formatted_text = crate::formatting::formatter::format(transcript, options.formatting_mode);
+        let context = crate::pipeline::context::FormatterContext::new(options.formatting_mode, None); // TODO: pass in vocabulary from options or state
+        let formatted_text = crate::formatting::formatter::format(transcript, &context);
         
         // 3. LLM Rewrite Layer
         let (final_text, used_llm) = if options.llm_enabled && options.rewrite_mode != RewriteMode::Off && intent != UserIntent::Dictation {

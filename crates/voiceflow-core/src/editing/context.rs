@@ -5,6 +5,8 @@ pub enum RewriteOperation {
     UndoCommand { before: String, after: String },
     ReplaceCommand { before: String, after: String },
     DeleteCommand { before: String, after: String },
+    DeleteLastSentence { before: String, after: String },
+    ReplaceLastWord { before: String, after: String },
 }
 
 #[derive(Debug, Clone, PartialEq)]

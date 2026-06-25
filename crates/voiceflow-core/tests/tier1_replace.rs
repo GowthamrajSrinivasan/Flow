@@ -250,3 +250,26 @@ fn test_replace_command_vs_natural_language() {
         assert_eq!(resolve_all_tier1(case.input), case.expected, "Failed on input: {}", case.input);
     }
 }
+
+#[test]
+fn test_replace_last_word() {
+    let cases = vec![
+        TestCase { input: "Hello Rahul. Replace last word with Rajesh.", expected: "Hello Rajesh." },
+        TestCase { input: "Meeting is tomorrow. Replace the last word with Friday.", expected: "Meeting is Friday." },
+        TestCase { input: "The budget is 5 lakh. Replace last word to crore.", expected: "The budget is 5 crore." },
+        
+        // Inline test
+        TestCase { input: "Hello Rahul. Replace last word with Rajesh. How are you?", expected: "Hello Rajesh. How are you?" },
+        
+        // Natural language cases that should NOT trigger
+        TestCase { input: "Never replace last word with a bad word.", expected: "Never replace last word with a bad word." }, // Natural language, but wait: "Replace last word with a" matches!
+        // Wait, "replace last word with a" matches `replace last word with \w+`! 
+        // We need to be careful with natural language cases for "replace last word".
+        // Let's test what happens when we use it in a normal sentence.
+        TestCase { input: "The teacher said to replace last word with an adjective.", expected: "The teacher said to replace last word with an adjective." },
+    ];
+
+    for case in cases {
+        assert_eq!(resolve_all_tier1(case.input), case.expected, "Failed on input: {}", case.input);
+    }
+}

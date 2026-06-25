@@ -33,3 +33,28 @@ pub fn convert(text: &str) -> String {
     
     result
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_spoken_punctuation() {
+        assert_eq!(convert("hello comma world period"), "hello , world .");
+        assert_eq!(convert("this is a test new paragraph wait new line yes"), "this is a test \n\n wait \n yes");
+        assert_eq!(convert("what is this question mark"), "what is this ?");
+        assert_eq!(convert("stop exclamation mark"), "stop !");
+    }
+
+    #[test]
+    fn test_case_insensitivity() {
+        assert_eq!(convert("HELLO COMMA WORLD"), "HELLO , WORLD");
+        assert_eq!(convert("Next New Paragraph Okay"), "Next \n\n Okay");
+    }
+
+    #[test]
+    fn test_word_boundaries() {
+        assert_eq!(convert("commander"), "commander");
+        assert_eq!(convert("new liner"), "new liner");
+    }
+}

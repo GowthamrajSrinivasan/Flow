@@ -12,8 +12,16 @@ pub fn cleanup(text: &str) -> String {
     result = re_newlines.replace_all(&result, "\n\n").to_string();
     
     // Remove duplicate punctuation
-    let re_punct = Regex::new(r"([,\.\?\!\:\;])\1+").unwrap();
-    result = re_punct.replace_all(&result, "$1").to_string();
+    let mut new_result = String::with_capacity(result.len());
+    let mut last_char = '\0';
+    for c in result.chars() {
+        if ".,?!:;".contains(c) && c == last_char {
+            continue;
+        }
+        new_result.push(c);
+        last_char = c;
+    }
+    result = new_result;
     
     result.trim().to_string()
 }

@@ -12,6 +12,8 @@ pub fn resolve_all_tier1_with_context(text: &str, context: &mut RewriteContext) 
     resolved = resolve_inline_corrections_with_context(&resolved, context);
     resolved = resolve_undo_commands_with_context(&resolved, context);
     resolved = resolve_basic_replace_with_context(&resolved, context);
+    resolved = resolve_replace_last_word_with_context(&resolved, context);
+    resolved = resolve_delete_last_sentence_with_context(&resolved, context);
     resolved = resolve_delete_last_word_with_context(&resolved, context);
     
     resolved
@@ -409,12 +411,15 @@ pub fn resolve_delete_last_word_with_context(text: &str, context: &mut RewriteCo
                 
                 new_resolved.push_str(&before_command[..cut_index]);
                 let p = before_command[last_match.end()..].trim_end();
-                let s = suffix.trim_start();
+                let trailing_spaces = suffix.trim_start_matches(|c: char| !c.is_whitespace());
+                let s_punct = suffix.trim();
+                
                 if !p.is_empty() {
                     new_resolved.push_str(p);
                 } else {
-                    new_resolved.push_str(s);
+                    new_resolved.push_str(s_punct);
                 }
+                new_resolved.push_str(trailing_spaces);
                 new_resolved.push_str(&resolved[command_end..]);
                 
                 resolved = new_resolved;
@@ -434,4 +439,177 @@ pub fn resolve_delete_last_word_with_context(text: &str, context: &mut RewriteCo
         }
     }
     resolved.trim().to_string()
+}
+
+pub fn resolve_delete_last_sentence(text: &str) -> String {
+    resolve_delete_last_sentence_with_context(text, &mut RewriteContext::new())
+}
+
+pub fn resolve_delete_last_sentence_with_context(text: &str, context: &mut RewriteContext) -> String {
+    let command_re = Regex::new(r"(?i)(^|\s+|[.?!,]\s*)(?:(?:please|can\s+you|could\s+you)\s+)?(?:delete|remove)\s+(?:the\s+)?(?:last|previous)\s+sentence(\s*[.?!]+(?:\s+|$)|$)").unwrap();
+    let mut resolved = text.to_string();
+    let mut changed = true;
+    
+    while changed {
+        changed = false;
+        if let Some(caps) = command_re.captures(&resolved) {
+            let before_state = resolved.clone();
+            let full_match_start = caps.get(0).unwrap().start();
+            let command_end = caps.get(0).unwrap().end();
+            let prefix = caps.get(1).unwrap().as_str();
+            let suffix = caps.get(2).unwrap().as_str();
+            
+            // The actual command starts after the prefix
+            let command_start = full_match_start + prefix.len();
+            let before_command = &resolved[..command_start];
+            
+            let trimmed = before_command.trim_end_matches(|c: char| c.is_whitespace() || c == '.' || c == '?' || c == '!');
+            let sentence_terminator_re = Regex::new(r"[.?!]+").unwrap();
+            let matches: Vec<_> = sentence_terminator_re.find_iter(trimmed).collect();
+            
+            let mut cut_index = 0;
+            if let Some(last_match) = matches.last() {
+                cut_index = last_match.end();
+                // Skip the spaces following the terminator
+                while cut_index < before_command.len() && before_command[cut_index..].starts_with(|c: char| c.is_whitespace()) {
+                    let next_char_len = before_command[cut_index..].chars().next().unwrap().len_utf8();
+                    cut_index += next_char_len;
+                }
+            }
+            
+            let mut new_resolved = String::new();
+            new_resolved.push_str(&before_command[..cut_index]);
+            // Do not push suffix here, because before_command[..cut_index] already has the correct punctuation/spacing,
+            // and pushing suffix (which is just command's trailing punctuation) leads to duplicated periods.
+            new_resolved.push_str(&resolved[command_end..]);
+            
+            resolved = new_resolved;
+            changed = true;
+            context.history.push(RewriteOperation::DeleteLastSentence {
+                before: before_state,
+                after: resolved.clone(),
+            });
+        }
+    }
+    resolved.trim().to_string()
+}
+
+pub fn resolve_replace_last_word(text: &str) -> String {
+    resolve_replace_last_word_with_context(text, &mut RewriteContext::new())
+}
+
+pub fn resolve_replace_last_word_with_context(text: &str, context: &mut RewriteContext) -> String {
+    let command_re = Regex::new(r"(?i)(^|[.?!,]\s*)(?:(?:please|can\s+you|could\s+you)\s+)?replace\s+(?:the\s+)?last\s+word\s+(?:with|to)\s+([^.?!]+)(\s*[.?!]+(?:\s+|$)|$)").unwrap();
+    let word_re = Regex::new(r"\w+").unwrap();
+    
+    let mut resolved = text.to_string();
+    let mut changed = true;
+    while changed {
+        changed = false;
+        if let Some(caps) = command_re.captures(&resolved) {
+            let before_state = resolved.clone();
+            let command_start = caps.get(0).unwrap().start();
+            let command_end = caps.get(0).unwrap().end();
+            let prefix = caps.get(1).unwrap().as_str(); 
+            let new_str = caps.get(2).unwrap().as_str();
+            let suffix = caps.get(3).unwrap().as_str();
+            
+            let before_command = &resolved[..command_start + prefix.len()];
+            
+            let matches: Vec<_> = word_re.find_iter(before_command).collect();
+            if let Some(last_match) = matches.last() {
+                let mut new_resolved = String::new();
+                new_resolved.push_str(&before_command[..last_match.start()]);
+                
+                let mut final_new = new_str.to_string();
+                if let Some(first_char) = last_match.as_str().chars().next() {
+                    if first_char.is_uppercase() {
+                        let mut c = final_new.chars();
+                        if let Some(f) = c.next() {
+                            final_new = f.to_uppercase().collect::<String>() + c.as_str();
+                        }
+                    }
+                }
+                
+                new_resolved.push_str(&final_new);
+                let p = before_command[last_match.end()..].trim_end();
+                
+                let trailing_spaces = suffix.trim_start_matches(|c: char| !c.is_whitespace());
+                let s_punct = suffix.trim();
+                
+                if !p.is_empty() {
+                    new_resolved.push_str(p);
+                } else {
+                    new_resolved.push_str(s_punct);
+                }
+                new_resolved.push_str(trailing_spaces);
+                new_resolved.push_str(&resolved[command_end..]);
+                
+                resolved = new_resolved;
+                changed = true;
+                context.history.push(RewriteOperation::ReplaceLastWord {
+                    before: before_state,
+                    after: resolved.clone(),
+                });
+            } else {
+                let mut new_resolved = String::new();
+                new_resolved.push_str(before_command);
+                new_resolved.push_str(suffix.trim_start());
+                new_resolved.push_str(&resolved[command_end..]);
+                resolved = new_resolved;
+                changed = true;
+            }
+        }
+    }
+    
+    resolved.trim().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_delete_last_sentence() {
+        assert_eq!(
+            resolve_delete_last_sentence("Project is complete. Deployment is tomorrow. Delete last sentence"),
+            "Project is complete."
+        );
+        assert_eq!(
+            resolve_delete_last_sentence("First. Second! Third? delete previous sentence"),
+            "First. Second!"
+        );
+    }
+
+    #[test]
+    fn test_replace_last_word() {
+        assert_eq!(
+            resolve_replace_last_word("Hello Rahul. Replace last word with Rajesh"),
+            "Hello Rajesh."
+        );
+        assert_eq!(
+            resolve_replace_last_word("Meeting is tomorrow. Replace the last word with Friday"),
+            "Meeting is Friday."
+        );
+    }
+    
+    #[test]
+    fn test_tier1_pipeline() {
+        assert_eq!(
+            resolve_all_tier1("The meeting is scheduled tomorrow. Delete last word"),
+            "The meeting is scheduled."
+        );
+        assert_eq!(
+            resolve_all_tier1("Project is complete. Deployment is tomorrow. Delete last sentence"),
+            "Project is complete."
+        );
+        assert_eq!(
+            resolve_all_tier1("Meeting in Chennai tomorrow. Replace Chennai with Bangalore"),
+            "Meeting in Bangalore tomorrow."
+        );
+        assert_eq!(
+            resolve_all_tier1("Hello Rahul. Replace last word with Rajesh"),
+            "Hello Rajesh."
+        );
+    }
 }

@@ -1,6 +1,6 @@
 use voiceflow_core::formatting::streaming::{MergeEngine, WindowBuilder, WindowPolicy};
 use voiceflow_core::formatting::regions::{RegionClassifier, RegionType};
-use voiceflow_core::pipeline::changes::{Change, ChangeSet};
+use voiceflow_core::pipeline::changes::{Change, ChangeKind, ChangeSet, TextRange, ChangeSource, Confidence};
 
 #[test]
 fn test_changeset_replace() {
@@ -10,10 +10,17 @@ fn test_changeset_replace() {
     let mut changeset = ChangeSet::new();
     
     // Simulating the formatter turning "monday" into "Monday"
-    changeset.add(Change::Replace {
-        start: 14,
-        end: 20,
-        replacement: "Monday".to_string(),
+    changeset.add(Change {
+        id: 0,
+        kind: ChangeKind::Replace {
+            replacement: "Monday".to_string(),
+        },
+        range: TextRange {
+            start: 14,
+            end: 20,
+        },
+        source: ChangeSource::Rule("CapitalizationRule".to_string()),
+        confidence: Confidence::Certain,
     });
     
     let result = engine.apply_changeset(historic_text, &changeset);
@@ -28,16 +35,31 @@ fn test_changeset_multiple_edits() {
     let mut changeset = ChangeSet::new();
     
     // Turn "github dot com" into "github.com"
-    changeset.add(Change::Replace {
-        start: 10,
-        end: 24,
-        replacement: "github.com".to_string(),
+    changeset.add(Change {
+        id: 0,
+        kind: ChangeKind::Replace {
+            replacement: "github.com".to_string(),
+        },
+        range: TextRange {
+            start: 10,
+            end: 24,
+        },
+        source: ChangeSource::Rule("UrlRule".to_string()),
+        confidence: Confidence::Certain,
     });
     
     // Add " slash pricing" -> "/pricing"
-    changeset.add(Change::Insert {
-        offset: 24,
-        text: "/pricing".to_string(),
+    changeset.add(Change {
+        id: 1,
+        kind: ChangeKind::Insert {
+            text: "/pricing".to_string(),
+        },
+        range: TextRange {
+            start: 24,
+            end: 24,
+        },
+        source: ChangeSource::Rule("UrlRule".to_string()),
+        confidence: Confidence::Certain,
     });
     
     let result = engine.apply_changeset(historic_text, &changeset);

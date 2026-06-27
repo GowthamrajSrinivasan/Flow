@@ -28,8 +28,19 @@ impl PipelineBuilder {
     }
 
     pub fn build(self) -> RuleRegistry {
+        use crate::formatting::planner::ExecutionPlanner;
+        
+        let ordered_rules = match ExecutionPlanner::plan(self.rules, &self.passes) {
+            Ok(rules) => rules,
+            Err(e) => {
+                // In a production library we'd return Result from build()
+                // For now, we panic on invalid pipeline configurations to guarantee deterministic behavior
+                panic!("Invalid pipeline configuration: {}", e);
+            }
+        };
+        
         RuleRegistry {
-            rules: self.rules,
+            rules: ordered_rules,
             passes: self.passes,
         }
     }
@@ -41,6 +52,10 @@ pub struct RuleRegistry {
 }
 
 impl RuleRegistry {
+    pub fn ordered_rule_names(&self) -> Vec<&'static str> {
+        self.rules.iter().map(|r| r.metadata().id.0).collect()
+    }
+    
     pub fn apply_all(&self, state: &mut TransformationState, request: &TransformationRequest) {
         // Multi-pass execution
         for pass in &self.passes {
@@ -51,10 +66,17 @@ impl RuleRegistry {
                     rule.apply(state, request);
                     
                     if text_before != state.current_text {
-                        state.changes.add(crate::pipeline::changes::Change::Replace {
-                            start: 0,
-                            end: text_before.len(),
-                            replacement: state.current_text.clone(),
+                        state.changes.add(crate::pipeline::changes::Change {
+                            id: state.changes.changes.len(),
+                            kind: crate::pipeline::changes::ChangeKind::Replace {
+                                replacement: state.current_text.clone(),
+                            },
+                            range: crate::pipeline::changes::TextRange {
+                                start: 0,
+                                end: text_before.len(),
+                            },
+                            source: crate::pipeline::changes::ChangeSource::Rule(rule.metadata().name.to_string()),
+                            confidence: crate::pipeline::changes::Confidence::Certain,
                         });
                     }
                 }

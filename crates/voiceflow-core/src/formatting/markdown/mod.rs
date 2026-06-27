@@ -1,11 +1,12 @@
 use regex::Regex;
 use crate::formatting::traits::FormatterRule;
-use crate::formatting::metadata::{RuleMetadata, RuleCategory, RuleCapabilities};
+use crate::formatting::metadata::{RuleMetadata, RuleId, RuleCategory, RuleCapabilities};
 use crate::pipeline::models::{TransformationRequest, TransformationState};
 use crate::pipeline::models::Diagnostic;
 use std::time::Instant;
 
 const METADATA: RuleMetadata = RuleMetadata {
+    id: RuleId("MarkdownRule"),
     name: "MarkdownRule",
     version: "1.0.0",
     category: RuleCategory::Formatting,
@@ -19,6 +20,7 @@ const METADATA: RuleMetadata = RuleMetadata {
         markdown_only: true,
         incremental_safe: true,
     },
+    depends_on: &[],
 };
 
 

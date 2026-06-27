@@ -5,6 +5,7 @@ pub mod streaming;
 pub mod regions;
 pub mod traits;
 pub mod metadata;
+pub mod planner;
 
 // Module directories for formatting rules
 pub mod punctuation;

@@ -6,6 +6,8 @@ pub enum RegionType {
     Unstable,
     /// The text was already formatted or protected and should NOT be touched.
     Protected,
+    /// Absolutely immutable unless explicitly unlocked.
+    Locked,
 }
 
 #[derive(Debug, Clone)]

@@ -1,11 +1,12 @@
 use regex::Regex;
 use voiceflow_shared::config::vocabulary::VocabularyEntry;
 use crate::formatting::traits::FormatterRule;
-use crate::formatting::metadata::{RuleMetadata, RuleCategory, RuleCapabilities};
+use crate::formatting::metadata::{RuleMetadata, RuleId, RuleCategory, RuleCapabilities};
 use crate::pipeline::models::{TransformationRequest, TransformationState, Diagnostic};
 use std::time::Instant;
 
 const METADATA: RuleMetadata = RuleMetadata {
+    id: RuleId("Vocabulary"),
     name: "Vocabulary",
     version: "1.0.0",
     category: RuleCategory::Normalization,
@@ -19,6 +20,7 @@ const METADATA: RuleMetadata = RuleMetadata {
         markdown_only: false,
         incremental_safe: true,
     },
+    depends_on: &[],
 };
 
 pub struct VocabularyRule;

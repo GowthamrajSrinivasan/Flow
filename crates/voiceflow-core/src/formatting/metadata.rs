@@ -1,4 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct RuleId(pub &'static str);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RuleCategory {
     Lexical,
     Normalization,
@@ -35,9 +38,11 @@ impl Default for RuleCapabilities {
 
 #[derive(Debug, Clone)]
 pub struct RuleMetadata {
+    pub id: RuleId,
     pub name: &'static str,
     pub version: &'static str,
     pub category: RuleCategory,
     pub priority: u16,
     pub capabilities: RuleCapabilities,
+    pub depends_on: &'static [RuleId],
 }

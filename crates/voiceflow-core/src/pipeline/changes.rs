@@ -1,37 +1,58 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Change {
-    /// Replaces the text between `start` and `end` byte indices with `replacement`.
-    Replace {
-        start: usize,
-        end: usize,
-        replacement: String,
-    },
-    /// Inserts `text` at the given `offset`.
-    Insert {
-        offset: usize,
-        text: String,
-    },
-    /// Deletes the text between `start` and `end` byte indices.
-    Delete {
-        start: usize,
-        end: usize,
-    },
-    /// Moves text from one region to another.
-    Move {
-        from_start: usize,
-        from_end: usize,
-        to_offset: usize,
-    },
+pub struct TextRange {
+    pub start: usize,
+    pub end: usize,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ChangeSource {
+    Rule(String),
+    User,
+    StreamingMerge,
+    Llm,
+    Plugin(String),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Confidence {
+    Certain,
+    Estimated(f32),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ChangeKind {
+    Replace { replacement: String },
+    Insert { text: String },
+    Delete,
+    Move { to_offset: usize },
+}
+
+pub type ChangeId = usize;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Change {
+    pub id: ChangeId,
+    pub kind: ChangeKind,
+    pub range: TextRange,
+    pub source: ChangeSource,
+    pub confidence: Confidence,
+}
+
+#[derive(Debug, Clone)]
 pub struct ChangeSet {
+    pub schema_version: u32,
     pub changes: Vec<Change>,
+}
+
+impl Default for ChangeSet {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ChangeSet {
     pub fn new() -> Self {
-        Self { changes: Vec::new() }
+        Self { schema_version: 1, changes: Vec::new() }
     }
 
     pub fn add(&mut self, change: Change) {

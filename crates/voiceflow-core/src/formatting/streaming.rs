@@ -113,7 +113,7 @@ impl MergeEngine {
 
     /// Applies a ChangeSet to the given text buffer.
     pub fn apply_changeset(&self, text: &str, changeset: &crate::pipeline::changes::ChangeSet) -> String {
-        use crate::pipeline::changes::Change;
+        use crate::pipeline::changes::{Change, ChangeKind};
         
         let mut result = text.to_string();
         
@@ -124,10 +124,10 @@ impl MergeEngine {
         let mut offset_shift: isize = 0;
         
         for change in &changeset.changes {
-            match change {
-                Change::Replace { start, end, replacement } => {
-                    let s = (*start as isize + offset_shift).max(0) as usize;
-                    let e = (*end as isize + offset_shift).max(0) as usize;
+            match &change.kind {
+                ChangeKind::Replace { replacement } => {
+                    let s = (change.range.start as isize + offset_shift).max(0) as usize;
+                    let e = (change.range.end as isize + offset_shift).max(0) as usize;
                     
                     if s <= result.len() && e <= result.len() && s <= e {
                         let original_len = e - s;
@@ -136,25 +136,25 @@ impl MergeEngine {
                         offset_shift += new_len as isize - original_len as isize;
                     }
                 }
-                Change::Insert { offset, text: ins_text } => {
-                    let o = (*offset as isize + offset_shift).max(0) as usize;
+                ChangeKind::Insert { text: ins_text } => {
+                    let o = (change.range.start as isize + offset_shift).max(0) as usize;
                     if o <= result.len() {
                         result.insert_str(o, ins_text);
                         offset_shift += ins_text.len() as isize;
                     }
                 }
-                Change::Delete { start, end } => {
-                    let s = (*start as isize + offset_shift).max(0) as usize;
-                    let e = (*end as isize + offset_shift).max(0) as usize;
+                ChangeKind::Delete => {
+                    let s = (change.range.start as isize + offset_shift).max(0) as usize;
+                    let e = (change.range.end as isize + offset_shift).max(0) as usize;
                     
                     if s <= result.len() && e <= result.len() && s <= e {
                         result.replace_range(s..e, "");
                         offset_shift -= (e - s) as isize;
                     }
                 }
-                Change::Move { from_start, from_end, to_offset } => {
-                    let fs = (*from_start as isize + offset_shift).max(0) as usize;
-                    let fe = (*from_end as isize + offset_shift).max(0) as usize;
+                ChangeKind::Move { to_offset } => {
+                    let fs = (change.range.start as isize + offset_shift).max(0) as usize;
+                    let fe = (change.range.end as isize + offset_shift).max(0) as usize;
                     
                     if fs <= result.len() && fe <= result.len() && fs <= fe {
                         let text_to_move = result[fs..fe].to_string();

@@ -1,4 +1,54 @@
 use regex::Regex;
+use crate::formatting::metadata::{RuleMetadata, RuleCategory, RuleCapabilities};
+use crate::pipeline::models::{TransformationRequest, TransformationState};
+use crate::pipeline::models::Diagnostic;
+use std::time::Instant;
+
+const METADATA: RuleMetadata = RuleMetadata {
+    name: "ListsRule",
+    version: "1.0.0",
+    category: RuleCategory::Formatting,
+    priority: 600,
+    capabilities: RuleCapabilities {
+        streaming_safe: true,
+        token_based: false,
+        regex_based: true,
+        locale_aware: false,
+        developer_only: false,
+        markdown_only: false,
+        incremental_safe: true,
+    },
+};
+
+pub struct ListsRule;
+
+impl crate::formatting::traits::FormatterRule for ListsRule {
+    fn metadata(&self) -> &'static RuleMetadata {
+        &METADATA
+    }
+
+    fn applies(&self, _request: &TransformationRequest) -> bool {
+        true
+    }
+
+    fn apply(&self, state: &mut TransformationState, _request: &TransformationRequest) {
+        let start_time = Instant::now();
+        let original_text = state.current_text.clone();
+        
+        state.current_text = format(&state.current_text);
+        
+        let duration = start_time.elapsed().as_millis();
+        if original_text != state.current_text {
+            state.diagnostics.push(Diagnostic {
+                rule: METADATA.name,
+                severity: "info".to_string(),
+                before: original_text,
+                after: state.current_text.clone(),
+                duration_ms: duration,
+            });
+        }
+    }
+}
 
 pub fn format(text: &str) -> String {
     let command_re = Regex::new(r"(?i)(^|\s+|[.?!,]\s*)(?:(?:please|can\s+you|could\s+you)\s+)?convert\s+to\s+(?:a\s+)?(?:bullet|bulleted)\s+list(\s*[.?!]+(?:\s+|$)|$)").unwrap();

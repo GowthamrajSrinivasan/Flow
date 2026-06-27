@@ -1,48 +1,23 @@
-use crate::pipeline::context::FormatterContext;
-use crate::pipeline::request::FormattingMode;
-use super::{punctuation, spacing, cleanup, vocabulary, capitalization, email_url, lists};
+use crate::formatting::context::FormattingContext;
+use crate::formatting::pipeline;
+use crate::formatting::registry::RuleRegistry;
 
-pub fn format(text: &str, context: &FormatterContext) -> String {
-    if context.mode == FormattingMode::Raw {
-        return text.to_string();
-    }
-    
-    // 1. Spoken Punctuation
-    let mut current = punctuation::convert(text);
-    
-    // 2. Email/URL Formatting (Tier 4 Phase 2)
-    current = email_url::format(&current);
+use crate::pipeline::models::TransformationRequest;
+use crate::formatting::context::{AppContext, UserContext, DocumentContext, FormattingProfile};
 
-    // 3. Lists (Tier 4 Phase 3)
-    current = lists::format(&current);
-
-    // 4. Spacing Fixes
-    current = spacing::fix_spacing(&current);
+pub fn format(text: &str, ctx: &FormattingContext) -> String {
+    let registry = RuleRegistry::default();
+    let pipeline = pipeline::TransformationPipeline::new(registry);
     
-    // 4. Cleanup Artifacts
-    current = cleanup::cleanup(&current);
+    let mut request = TransformationRequest::new(text.to_string());
+    request.mode = ctx.mode.clone();
+    request.user_context.language = ctx.language.clone();
+    request.app_context.locale = ctx.locale.clone();
+    request.user_context.markdown_enabled = ctx.markdown_enabled;
+    request.user_context.vocabulary = ctx.vocabulary.clone();
     
-    // 5. User Vocabulary
-    current = vocabulary::expand_vocabulary(&current, context);
-    
-    // 6. Capitalization
-    current = capitalization::capitalize(&current);
-    
-    // 7. Context Formatting
-    match context.mode {
-        FormattingMode::Email => {
-            // Very simple deterministic fix as example
-            if current.to_lowercase().starts_with("thanks,") && !current.contains('\n') {
-                current = current.replacen(" ", "\n", 1);
-            }
-        },
-        FormattingMode::Chat => {
-            // E.g., make it shorter or remove trailing periods, just returning for now
-        },
-        _ => {}
-    }
-    
-    current
+    let result = pipeline.transform(&request);
+    result.output
 }
 
 #[cfg(test)]
@@ -55,7 +30,7 @@ mod tests {
         
         let expected = "Hello, here is my email john.doe@gmail.com. Here are the items we need:\n- apples\n- bananas\n- oranges.";
         
-        let context = FormatterContext::default();
+        let context = FormattingContext::default();
         let formatted = format(input, &context);
         assert_eq!(formatted, expected);
     }
@@ -64,7 +39,7 @@ mod tests {
     fn test_tier4_url_and_punctuation() {
         let input = "go to open ai dot com slash pricing today comma and check the plans period";
         let expected = "Go to openai.com/pricing today, and check the plans.";
-        let context = FormatterContext::default();
+        let context = FormattingContext::default();
         let formatted = format(input, &context);
         assert_eq!(formatted, expected);
     }

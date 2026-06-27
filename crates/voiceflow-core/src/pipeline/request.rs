@@ -1,10 +1,12 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FormattingMode {
     Raw,
-    Smart,
+    Smart, // Equivalent to Writing
     Email,
     Chat,
     Document,
+    Developer,
+    Markdown,
 }
 
 impl Default for FormattingMode {

@@ -457,7 +457,7 @@ pub fn resolve_delete_last_sentence_with_context(text: &str, context: &mut Rewri
             let full_match_start = caps.get(0).unwrap().start();
             let command_end = caps.get(0).unwrap().end();
             let prefix = caps.get(1).unwrap().as_str();
-            let suffix = caps.get(2).unwrap().as_str();
+            let _suffix = caps.get(2).unwrap().as_str();
             
             // The actual command starts after the prefix
             let command_start = full_match_start + prefix.len();

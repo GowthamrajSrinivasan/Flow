@@ -347,7 +347,6 @@ mod tests {
 
     #[test]
     fn test_pause_stops_transcription() {
-        let (tx, rx) = channel();
         let is_listening = Arc::new(Mutex::new(true));
 
         // We simulate some speech frames, and then silence.
@@ -377,8 +376,11 @@ mod tests {
         };
         let mut stt = MockSpeechRecognizer;
 
+        let is_listening = Arc::new(Mutex::new(true));
+        let formatter_context = Arc::new(Mutex::new(crate::pipeline::context::FormatterContext::default()));
+        let (tx, rx) = std::sync::mpsc::channel();
         // Run the loop. It should exit on its own after silence threshold is met.
-        run_listening_loop(&mut audio, &mut vad, &mut stt, is_listening.clone(), tx);
+        run_listening_loop(&mut audio, &mut vad, &mut stt, is_listening.clone(), formatter_context, tx);
 
         // Verify the loop correctly turned off listening
         assert!(!*is_listening.lock().unwrap(), "Listening should be false after pause triggers stop");

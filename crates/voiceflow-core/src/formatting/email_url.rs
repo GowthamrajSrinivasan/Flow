@@ -1,4 +1,54 @@
 use regex::Regex;
+use crate::formatting::metadata::{RuleMetadata, RuleCategory, RuleCapabilities};
+use crate::pipeline::models::{TransformationRequest, TransformationState};
+use crate::pipeline::models::Diagnostic;
+use std::time::Instant;
+
+const METADATA: RuleMetadata = RuleMetadata {
+    name: "EmailUrlRule",
+    version: "1.0.0",
+    category: RuleCategory::Formatting,
+    priority: 700,
+    capabilities: RuleCapabilities {
+        streaming_safe: true,
+        token_based: false,
+        regex_based: true,
+        locale_aware: false,
+        developer_only: false,
+        markdown_only: false,
+        incremental_safe: true,
+    },
+};
+
+pub struct EmailUrlRule;
+
+impl crate::formatting::traits::FormatterRule for EmailUrlRule {
+    fn metadata(&self) -> &'static RuleMetadata {
+        &METADATA
+    }
+
+    fn applies(&self, _request: &TransformationRequest) -> bool {
+        true
+    }
+
+    fn apply(&self, state: &mut TransformationState, _request: &TransformationRequest) {
+        let start_time = Instant::now();
+        let original_text = state.current_text.clone();
+        
+        state.current_text = format(&state.current_text);
+        
+        let duration = start_time.elapsed().as_millis();
+        if original_text != state.current_text {
+            state.diagnostics.push(Diagnostic {
+                rule: METADATA.name,
+                severity: "info".to_string(),
+                before: original_text,
+                after: state.current_text.clone(),
+                duration_ms: duration,
+            });
+        }
+    }
+}
 
 pub fn format(text: &str) -> String {
     let mut result = text.to_string();
@@ -7,7 +57,7 @@ pub fn format(text: &str) -> String {
     // but are NOT part of it.
     let blacklist = vec![
         "go", "to", "visit", "is", "at", "contact", "email", "website", 
-        "on", "in", "for", "and", "the", "a", "an", "my", "your"
+        "on", "in", "for", "and", "the", "a", "an", "my", "your", "check", "out"
     ];
 
     let is_blacklisted = |w: &str| {

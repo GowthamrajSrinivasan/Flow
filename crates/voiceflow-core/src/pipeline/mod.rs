@@ -3,7 +3,8 @@ pub mod processor;
 pub mod request;
 pub mod response;
 pub mod context;
-
+pub mod models;
+pub mod changes;
 pub use context::FormatterContext;
 pub use intent::{IntentDetector, UserIntent};
 pub use processor::VoiceFlowProcessor;
